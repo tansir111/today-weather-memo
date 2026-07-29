@@ -22,8 +22,13 @@
       .layout { display:grid; grid-template-columns:1.04fr .96fr; gap:18px; align-items:stretch; }
       .weather { position:relative; overflow:hidden; min-height:420px; padding:30px; background:var(--sky); border:1px solid #d5e8fb; border-radius:8px; box-shadow:var(--shadow); }
       .weather::after { content:""; position:absolute; width:205px; height:205px; right:-54px; top:-60px; border:32px solid rgba(255,255,255,.50); border-radius:50%; }
-      .weather-top { position:relative; z-index:1; display:flex; justify-content:space-between; align-items:center; }
+      .weather-top { position:relative; z-index:1; display:flex; justify-content:space-between; align-items:center; gap:12px; }
       .weather-label { font-size:14px; color:#54708f; font-weight:600; }
+      .location-controls { display:flex; align-items:center; gap:7px; min-width:0; }
+      .location { width:108px; min-width:0; padding:7px 8px; border:1px solid rgba(255,255,255,.82); border-radius:5px; outline:0; background:rgba(255,255,255,.62); color:var(--ink); font-size:13px; }
+      .location:focus { border-color:#87bdec; background:white; }
+      .refresh { width:32px; height:32px; padding:0; border:1px solid rgba(255,255,255,.82); border-radius:5px; background:rgba(255,255,255,.62); color:#406887; cursor:pointer; font-size:17px; line-height:1; }
+      .refresh:hover { background:white; }
       .condition { display:flex; gap:7px; align-items:center; background:rgba(255,255,255,.62); border:1px solid rgba(255,255,255,.78); padding:7px 10px; border-radius:6px; }
       select { appearance:none; border:0; background:transparent; color:var(--ink); cursor:pointer; outline:0; font-size:14px; }
       .temperature { position:relative; z-index:1; display:flex; align-items:flex-end; margin:37px 0 17px; }
@@ -49,7 +54,8 @@
       .save:hover { transform:translateY(-1px); }
       .save:active { transform:translateY(2px); box-shadow:none; }
       .tip { margin:22px 0 0; text-align:center; color:#8794a9; font-size:12px; }
-      @media (max-width:700px) { .shell { width:min(100% - 24px,540px); padding-top:28px; } header { margin-bottom:20px; } .saved { display:none; } .layout { grid-template-columns:1fr; } .weather,.note { min-height:auto; padding:24px; } .weather { min-height:355px; } .temperature { margin-top:28px; } .temperature input { font-size:72px; } .note { min-height:380px; } }
+      .sync-status { position:relative; z-index:1; min-height:18px; margin:12px 0 -22px; color:#64809d; font-size:12px; }
+      @media (max-width:700px) { .shell { width:min(100% - 24px,540px); padding-top:28px; } header { margin-bottom:20px; } .saved { display:none; } .layout { grid-template-columns:1fr; } .weather,.note { min-height:auto; padding:24px; } .weather { min-height:355px; } .weather-top { align-items:flex-start; } .location-controls { flex-wrap:wrap; justify-content:flex-end; } .condition { padding:6px 8px; } .temperature { margin-top:36px; } .temperature input { font-size:72px; } .note { min-height:380px; } }
     </style>
   </head>
   <body>
@@ -64,9 +70,15 @@
       <section class="layout" aria-label="今日记录">
         <section class="weather" aria-labelledby="weather-title">
           <div class="weather-top">
-            <span class="weather-label" id="weather-title">天气实况</span>
-            <label class="condition"><span id="weather-icon" aria-hidden="true">&#9728;&#65039;</span><select id="condition" aria-label="天气状况"><option value="晴朗">晴朗</option><option value="多云">多云</option><option value="阴天">阴天</option><option value="小雨">小雨</option><option value="雷雨">雷雨</option><option value="下雪">下雪</option></select></label>
+            <span class="weather-label" id="weather-title">实时天气</span>
+            <div class="location-controls">
+              <input class="location" id="location" list="cities" aria-label="城市或地区" value="上海" placeholder="输入城市" />
+              <button class="refresh" id="refresh-weather" type="button" aria-label="刷新天气" title="刷新天气">&#10227;</button>
+              <label class="condition"><span id="weather-icon" aria-hidden="true">&#9728;&#65039;</span><select id="condition" aria-label="天气状况"><option value="晴朗">晴朗</option><option value="多云">多云</option><option value="阴天">阴天</option><option value="小雨">小雨</option><option value="雷雨">雷雨</option><option value="下雪">下雪</option></select></label>
+            </div>
           </div>
+          <datalist id="cities"><option value="北京"></option><option value="上海"></option><option value="广州"></option><option value="深圳"></option><option value="成都"></option><option value="杭州"></option><option value="香港"></option><option value="东京"></option><option value="新加坡"></option><option value="伦敦"></option><option value="纽约"></option></datalist>
+          <p class="sync-status" id="sync-status">输入城市后将获取实时天气</p>
           <div class="temperature"><input id="temperature" type="number" inputmode="decimal" aria-label="当前温度" value="24" /><span class="degree">°</span></div>
           <div class="feels">体感温度 <input id="feels" type="number" inputmode="decimal" value="25" />°C</div>
           <div class="stats">
@@ -85,13 +97,44 @@
     </main>
     <script>
       const key = "today-weather-note-v1";
-      const fields = ["condition", "temperature", "feels", "range", "humidity", "wind", "memo"];
+      const fields = ["location", "condition", "temperature", "feels", "range", "humidity", "wind", "memo"];
       const icons = { 晴朗:"☀️", 多云:"⛅", 阴天:"☁️", 小雨:"🌦️", 雷雨:"⛈️", 下雪:"🌨️" };
+      const weatherCodes = { 0:"晴朗", 1:"晴朗", 2:"多云", 3:"阴天", 45:"阴天", 48:"阴天", 51:"小雨", 53:"小雨", 55:"小雨", 56:"小雨", 57:"小雨", 61:"小雨", 63:"小雨", 65:"小雨", 66:"小雨", 67:"小雨", 71:"下雪", 73:"下雪", 75:"下雪", 77:"下雪", 80:"小雨", 81:"小雨", 82:"小雨", 85:"下雪", 86:"下雪", 95:"雷雨", 96:"雷雨", 99:"雷雨" };
+      const windDirections = ["北风", "东北风", "东风", "东南风", "南风", "西南风", "西风", "西北风"];
       const $ = (id) => document.getElementById(id);
       const formatDate = () => new Intl.DateTimeFormat("zh-CN", { year:"numeric", month:"long", day:"numeric", weekday:"long" }).format(new Date());
       $("date").textContent = formatDate();
       function updateIcon() { $("weather-icon").textContent = icons[$("condition").value]; }
       function updateCounter() { $("counter").textContent = `${$("memo").value.length} / 500`; }
+      function setSyncStatus(message) { $("sync-status").textContent = message; }
+      function windDirection(degrees) { return windDirections[Math.round(degrees / 45) % 8]; }
+      async function refreshWeather() {
+        const query = $("location").value.trim();
+        if (!query) { setSyncStatus("请输入城市或地区"); $("location").focus(); return; }
+        setSyncStatus("正在获取实时天气...");
+        $("refresh-weather").disabled = true;
+        try {
+          const placeResponse = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query)}&count=1&language=zh&format=json`);
+          const placeData = await placeResponse.json();
+          const place = placeData.results && placeData.results[0];
+          if (!place) throw new Error("未找到该地区");
+          const weatherResponse = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${place.latitude}&longitude=${place.longitude}&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m,wind_direction_10m&daily=temperature_2m_max,temperature_2m_min&timezone=auto`);
+          const weatherData = await weatherResponse.json();
+          const current = weatherData.current;
+          const condition = weatherCodes[current.weather_code] || "多云";
+          $("location").value = place.name;
+          $("weather-title").textContent = `${place.name} 实时天气`;
+          $("condition").value = condition;
+          $("temperature").value = Math.round(current.temperature_2m);
+          $("feels").value = Math.round(current.apparent_temperature);
+          $("range").value = `${Math.round(weatherData.daily.temperature_2m_max[0])}° / ${Math.round(weatherData.daily.temperature_2m_min[0])}°`;
+          $("humidity").value = `${current.relative_humidity_2m}%`;
+          $("wind").value = `${windDirection(current.wind_direction_10m)} ${Math.round(current.wind_speed_10m)} km/h`;
+          updateIcon(); save();
+          setSyncStatus(`已更新：${new Intl.DateTimeFormat("zh-CN", { hour:"2-digit", minute:"2-digit" }).format(new Date())}`);
+        } catch (error) { setSyncStatus(error.message === "未找到该地区" ? "未找到该地区，请换一个城市名称" : "暂时无法获取天气，可稍后刷新"); }
+        finally { $("refresh-weather").disabled = false; }
+      }
       function save(showFeedback = false) {
         const data = Object.fromEntries(fields.map((id) => [id, $(id).value]));
         localStorage.setItem(key, JSON.stringify(data));
@@ -100,8 +143,11 @@
       function load() { try { const saved = JSON.parse(localStorage.getItem(key)); if (saved) fields.forEach((id) => { if (saved[id] !== undefined) $(id).value = saved[id]; }); } catch (_) {} updateIcon(); updateCounter(); }
       fields.forEach((id) => $(id).addEventListener("input", () => { if (id === "memo") updateCounter(); if (id === "condition") updateIcon(); save(); }));
       $("save").addEventListener("click", () => save(true));
+      $("refresh-weather").addEventListener("click", refreshWeather);
+      $("location").addEventListener("keydown", (event) => { if (event.key === "Enter") refreshWeather(); });
       $("clear").addEventListener("click", () => { if (confirm("确定清除今天填写的天气和备忘吗？")) { localStorage.removeItem(key); location.reload(); } });
       load();
+      refreshWeather();
     </script>
   </body>
 </html>
