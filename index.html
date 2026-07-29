@@ -26,6 +26,7 @@
       .weather-label { font-size:14px; color:#54708f; font-weight:600; }
       .location-controls { display:flex; align-items:center; gap:7px; min-width:0; }
       .location { width:108px; min-width:0; padding:7px 8px; border:1px solid rgba(255,255,255,.82); border-radius:5px; outline:0; background:rgba(255,255,255,.62); color:var(--ink); font-size:13px; }
+      select.location { appearance:auto; cursor:pointer; }
       .location:focus { border-color:#87bdec; background:white; }
       .refresh { width:32px; height:32px; padding:0; border:1px solid rgba(255,255,255,.82); border-radius:5px; background:rgba(255,255,255,.62); color:#406887; cursor:pointer; font-size:17px; line-height:1; }
       .refresh:hover { background:white; }
@@ -72,12 +73,11 @@
           <div class="weather-top">
             <span class="weather-label" id="weather-title">实时天气</span>
             <div class="location-controls">
-              <input class="location" id="location" list="cities" aria-label="城市或地区" value="上海" placeholder="输入城市" />
+              <select class="location" id="location" aria-label="城市或地区"><option value="上海">上海</option><option value="北京">北京</option><option value="安徽">安徽</option><option value="广州">广州</option><option value="深圳">深圳</option><option value="成都">成都</option><option value="杭州">杭州</option><option value="香港">香港</option><option value="东京">东京</option><option value="新加坡">新加坡</option><option value="伦敦">伦敦</option><option value="纽约">纽约</option></select>
               <button class="refresh" id="refresh-weather" type="button" aria-label="刷新天气" title="刷新天气">&#10227;</button>
               <label class="condition"><span id="weather-icon" aria-hidden="true">&#9728;&#65039;</span><select id="condition" aria-label="天气状况"><option value="晴朗">晴朗</option><option value="多云">多云</option><option value="阴天">阴天</option><option value="小雨">小雨</option><option value="雷雨">雷雨</option><option value="下雪">下雪</option></select></label>
             </div>
           </div>
-          <datalist id="cities"><option value="北京"></option><option value="上海"></option><option value="安徽"></option><option value="广州"></option><option value="深圳"></option><option value="成都"></option><option value="杭州"></option><option value="香港"></option><option value="东京"></option><option value="新加坡"></option><option value="伦敦"></option><option value="纽约"></option></datalist>
           <p class="sync-status" id="sync-status">输入城市后将获取实时天气</p>
           <div class="temperature"><input id="temperature" type="number" inputmode="decimal" aria-label="当前温度" value="24" /><span class="degree">°</span></div>
           <div class="feels">体感温度 <input id="feels" type="number" inputmode="decimal" value="25" />°C</div>
@@ -146,7 +146,7 @@
       fields.forEach((id) => $(id).addEventListener("input", () => { if (id === "memo") updateCounter(); if (id === "condition") updateIcon(); save(); }));
       $("save").addEventListener("click", () => save(true));
       $("refresh-weather").addEventListener("click", refreshWeather);
-      $("location").addEventListener("keydown", (event) => { if (event.key === "Enter") refreshWeather(); });
+      $("location").addEventListener("change", refreshWeather);
       $("clear").addEventListener("click", () => { if (confirm("确定清除今天填写的天气和备忘吗？")) { localStorage.removeItem(key); location.reload(); } });
       load();
       refreshWeather();
