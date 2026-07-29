@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f4f7ff" />
+    <title>今日天气</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <style>
+      :root { --ink:#182b47; --muted:#71809a; --line:#dce4f0; --paper:#fffefa; --sky:#e8f4ff; --blue:#1976d2; --gold:#f6bf3c; --shadow:0 18px 50px rgba(30, 65, 111, .12); }
+      * { box-sizing:border-box; }
+      body { margin:0; min-height:100vh; color:var(--ink); background:linear-gradient(160deg,#f3f7ff 0%,#fbfcff 46%,#edf8f7 100%); font-family:"Noto Sans SC",system-ui,sans-serif; }
+      button,input,textarea { font:inherit; }
+      .shell { width:min(100% - 32px,940px); margin:0 auto; padding:54px 0 44px; }
+      header { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:28px; }
+      h1 { margin:0; font-size:28px; line-height:1.25; letter-spacing:0; }
+      .date { margin:8px 0 0; color:var(--muted); font-family:"DM Mono",monospace; font-size:13px; }
+      .saved { display:flex; align-items:center; gap:7px; color:var(--muted); font-size:13px; padding-top:7px; }
+      .saved-dot { width:8px; height:8px; border-radius:50%; background:#58b58b; }
+      .layout { display:grid; grid-template-columns:1.04fr .96fr; gap:18px; align-items:stretch; }
+      .weather { position:relative; overflow:hidden; min-height:420px; padding:30px; background:var(--sky); border:1px solid #d5e8fb; border-radius:8px; box-shadow:var(--shadow); }
+      .weather::after { content:""; position:absolute; width:205px; height:205px; right:-54px; top:-60px; border:32px solid rgba(255,255,255,.50); border-radius:50%; }
+      .weather-top { position:relative; z-index:1; display:flex; justify-content:space-between; align-items:center; }
+      .weather-label { font-size:14px; color:#54708f; font-weight:600; }
+      .condition { display:flex; gap:7px; align-items:center; background:rgba(255,255,255,.62); border:1px solid rgba(255,255,255,.78); padding:7px 10px; border-radius:6px; }
+      select { appearance:none; border:0; background:transparent; color:var(--ink); cursor:pointer; outline:0; font-size:14px; }
+      .temperature { position:relative; z-index:1; display:flex; align-items:flex-end; margin:37px 0 17px; }
+      .temperature input { width:150px; border:0; border-bottom:2px solid transparent; outline:0; background:transparent; color:var(--ink); font:500 84px/.9 "DM Mono",monospace; letter-spacing:0; }
+      .temperature input:focus { border-color:#87bdec; }
+      .degree { font:500 36px/1 "DM Mono",monospace; padding-bottom:4px; }
+      .feels { position:relative; z-index:1; color:#54708f; font-size:14px; }
+      .feels input { width:42px; padding:0; border:0; border-bottom:1px solid #9bbfdf; color:inherit; background:transparent; outline:0; text-align:center; font-family:"DM Mono",monospace; }
+      .stats { position:relative; z-index:1; display:grid; grid-template-columns:repeat(3,1fr); gap:10px; padding-top:35px; }
+      .stat { padding-top:12px; border-top:1px solid rgba(79,133,181,.27); }
+      .stat span { display:block; color:#64809d; font-size:12px; }
+      .stat input { width:100%; margin-top:7px; padding:0; border:0; background:transparent; color:var(--ink); outline:0; font:500 17px/1.3 "DM Mono",monospace; }
+      .note { display:flex; flex-direction:column; min-height:420px; padding:30px; background:var(--paper); border:1px solid #e8e8e2; border-radius:8px; box-shadow:var(--shadow); }
+      .note-heading { display:flex; justify-content:space-between; align-items:center; margin-bottom:17px; }
+      h2 { margin:0; font-size:17px; letter-spacing:0; }
+      .counter { color:var(--muted); font:12px "DM Mono",monospace; }
+      textarea { flex:1; min-height:215px; width:100%; resize:none; padding:0; border:0; outline:0; color:var(--ink); background:repeating-linear-gradient(transparent 0 31px,#e6eaf0 32px); font-size:15px; line-height:32px; }
+      textarea::placeholder { color:#a3adbd; }
+      .actions { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-top:22px; }
+      .clear { border:0; padding:7px 0; background:transparent; color:#7e8da3; cursor:pointer; font-size:13px; }
+      .clear:hover { color:#c24f4f; }
+      .save { border:0; border-radius:5px; padding:10px 16px; background:var(--ink); color:white; cursor:pointer; font-size:14px; font-weight:600; box-shadow:0 3px 0 #0d1c31; }
+      .save:hover { transform:translateY(-1px); }
+      .save:active { transform:translateY(2px); box-shadow:none; }
+      .tip { margin:22px 0 0; text-align:center; color:#8794a9; font-size:12px; }
+      @media (max-width:700px) { .shell { width:min(100% - 24px,540px); padding-top:28px; } header { margin-bottom:20px; } .saved { display:none; } .layout { grid-template-columns:1fr; } .weather,.note { min-height:auto; padding:24px; } .weather { min-height:355px; } .temperature { margin-top:28px; } .temperature input { font-size:72px; } .note { min-height:380px; } }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <header>
+        <div>
+          <h1>今日天气</h1>
+          <p class="date" id="date"></p>
+        </div>
+        <div class="saved"><i class="saved-dot"></i><span id="save-status">已自动保存</span></div>
+      </header>
+      <section class="layout" aria-label="今日记录">
+        <section class="weather" aria-labelledby="weather-title">
+          <div class="weather-top">
+            <span class="weather-label" id="weather-title">天气实况</span>
+            <label class="condition"><span id="weather-icon" aria-hidden="true">&#9728;&#65039;</span><select id="condition" aria-label="天气状况"><option value="晴朗">晴朗</option><option value="多云">多云</option><option value="阴天">阴天</option><option value="小雨">小雨</option><option value="雷雨">雷雨</option><option value="下雪">下雪</option></select></label>
+          </div>
+          <div class="temperature"><input id="temperature" type="number" inputmode="decimal" aria-label="当前温度" value="24" /><span class="degree">°</span></div>
+          <div class="feels">体感温度 <input id="feels" type="number" inputmode="decimal" value="25" />°C</div>
+          <div class="stats">
+            <label class="stat"><span>最高 / 最低</span><input id="range" aria-label="最高最低温" value="28° / 20°" /></label>
+            <label class="stat"><span>湿度</span><input id="humidity" aria-label="湿度" value="64%" /></label>
+            <label class="stat"><span>风力</span><input id="wind" aria-label="风力" value="东南风 2级" /></label>
+          </div>
+        </section>
+        <section class="note" aria-labelledby="note-title">
+          <div class="note-heading"><h2 id="note-title">备忘录</h2><span class="counter" id="counter">0 / 500</span></div>
+          <textarea id="memo" maxlength="500" placeholder="写下今天要记住的事..." aria-label="今天的备忘录"></textarea>
+          <div class="actions"><button class="clear" id="clear" type="button">清除今日记录</button><button class="save" id="save" type="button">保存记录</button></div>
+        </section>
+      </section>
+      <p class="tip">数据仅保存在当前浏览器</p>
+    </main>
+    <script>
+      const key = "today-weather-note-v1";
+      const fields = ["condition", "temperature", "feels", "range", "humidity", "wind", "memo"];
+      const icons = { 晴朗:"☀️", 多云:"⛅", 阴天:"☁️", 小雨:"🌦️", 雷雨:"⛈️", 下雪:"🌨️" };
+      const $ = (id) => document.getElementById(id);
+      const formatDate = () => new Intl.DateTimeFormat("zh-CN", { year:"numeric", month:"long", day:"numeric", weekday:"long" }).format(new Date());
+      $("date").textContent = formatDate();
+      function updateIcon() { $("weather-icon").textContent = icons[$("condition").value]; }
+      function updateCounter() { $("counter").textContent = `${$("memo").value.length} / 500`; }
+      function save(showFeedback = false) {
+        const data = Object.fromEntries(fields.map((id) => [id, $(id).value]));
+        localStorage.setItem(key, JSON.stringify(data));
+        if (showFeedback) { $("save-status").textContent = "已保存"; setTimeout(() => $("save-status").textContent = "已自动保存", 1400); }
+      }
+      function load() { try { const saved = JSON.parse(localStorage.getItem(key)); if (saved) fields.forEach((id) => { if (saved[id] !== undefined) $(id).value = saved[id]; }); } catch (_) {} updateIcon(); updateCounter(); }
+      fields.forEach((id) => $(id).addEventListener("input", () => { if (id === "memo") updateCounter(); if (id === "condition") updateIcon(); save(); }));
+      $("save").addEventListener("click", () => save(true));
+      $("clear").addEventListener("click", () => { if (confirm("确定清除今天填写的天气和备忘吗？")) { localStorage.removeItem(key); location.reload(); } });
+      load();
+    </script>
+  </body>
+</html>
